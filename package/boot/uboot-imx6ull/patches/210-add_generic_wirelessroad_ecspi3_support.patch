@@ -1,6 +1,6 @@
 diff -Nru u-boot-2017.07-001/arch/arm/cpu/armv7/mx6/Kconfig u-boot-2017.07-002-generic_ecspi3/arch/arm/cpu/armv7/mx6/Kconfig
 --- u-boot-2017.07-001/arch/arm/cpu/armv7/mx6/Kconfig	2020-03-28 00:59:42.813268988 +0200
-+++ u-boot-2017.07-002-generic_ecspi3/arch/arm/cpu/armv7/mx6/Kconfig	2020-03-28 01:11:46.915001855 +0200
++++ u-boot-2017.07-002-generic_ecspi3/arch/arm/mach-imx/mx6/Kconfig	2020-03-28 01:11:46.915001855 +0200
 @@ -252,6 +252,7 @@
  	select DM_THERMAL
  	select SUPPORT_SPL
@@ -16,7 +16,7 @@ diff -Nru u-boot-2017.07-001/arch/arm/cpu/armv7/mx6/Kconfig u-boot-2017.07-002-g
 +config TARGET_MX6ULL_WIRELESSROAD_ECSPI3
 +	bool "Support imx6ull WirelessRoad on ecspi3"
 +	select BOARD_LATE_INIT
-+	select MX6ULL
++	depends on MX6ULL
 +	select DM
 +	select DM_THERMAL
 +
@@ -30,23 +30,22 @@ diff -Nru u-boot-2017.07-001/arch/arm/cpu/armv7/mx6/Kconfig u-boot-2017.07-002-g
 +source "board/freescale/wirelessroad_ecspi3/Kconfig"
 +
  endif
-diff -Nru u-boot-2017.07-001/arch/arm/dts/Makefile u-boot-2017.07-002-generic_ecspi3/arch/arm/dts/Makefile
---- u-boot-2017.07-001/arch/arm/dts/Makefile	2017-07-10 20:07:38.000000000 +0300
-+++ u-boot-2017.07-002-generic_ecspi3/arch/arm/dts/Makefile	2020-03-28 01:07:44.577910947 +0200
-@@ -362,7 +362,8 @@
- 	imx6ul-isiot-emmc.dtb \
- 	imx6ul-isiot-mmc.dtb \
- 	imx6ul-isiot-nand.dtb \
--	imx6ul-opos6uldev.dtb
-+	imx6ul-opos6uldev.dtb \
+--- u-boot-2020.10/arch/arm/dts/Makefile	2020-10-05 19:15:32.000000000 +0400
++++ u-boot-2020.10_fixed/arch/arm/dts/Makefile	2021-10-23 17:40:36.904582553 +0400
+@@ -730,7 +730,8 @@
+ 	imx6ull-phytec-segin-ff-rdk-emmc.dtb \
+ 	imx6ull-dart-6ul.dtb \
+ 	imx6ull-somlabs-visionsom.dtb \
+-	imx6ulz-14x14-evk.dtb
++	imx6ulz-14x14-evk.dtb \
 +	wirelessroad_ecspi3.dtb
  
- dtb-$(CONFIG_MX7) += imx7-colibri.dtb \
- 	imx7d-sdb.dtb
+ dtb-$(CONFIG_ARCH_MX6) += \
+ 	imx6-apalis.dtb \
 diff -Nru u-boot-2017.07-001/arch/arm/dts/wirelessroad_ecspi3.dts u-boot-2017.07-002-generic_ecspi3/arch/arm/dts/wirelessroad_ecspi3.dts
 --- u-boot-2017.07-001/arch/arm/dts/wirelessroad_ecspi3.dts	1970-01-01 03:00:00.000000000 +0300
 +++ u-boot-2017.07-002-generic_ecspi3/arch/arm/dts/wirelessroad_ecspi3.dts	2020-03-28 01:07:01.467369482 +0200
-@@ -0,0 +1,240 @@
+@@ -0,0 +1,241 @@
 +/*
 + * Copyright (C) 2016 Freescale Semiconductor, Inc.
 + *
@@ -68,7 +67,8 @@ diff -Nru u-boot-2017.07-001/arch/arm/dts/wirelessroad_ecspi3.dts u-boot-2017.07
 +		stdout-path = &uart1;
 +	};
 +
-+	memory {
++	memory@80000000 {
++		device_type = "memory";
 +		reg = <0x80000000 0x20000000>;
 +	};
 +
@@ -603,7 +603,7 @@ diff -Nru u-boot-2017.07-001/board/freescale/wirelessroad_ecspi3/README u-boot-2
 diff -Nru u-boot-2017.07-001/board/freescale/wirelessroad_ecspi3/wirelessroad_ecspi3.c u-boot-2017.07-002-generic_ecspi3/board/freescale/wirelessroad_ecspi3/wirelessroad_ecspi3.c
 --- u-boot-2017.07-001/board/freescale/wirelessroad_ecspi3/wirelessroad_ecspi3.c	1970-01-01 03:00:00.000000000 +0300
 +++ u-boot-2017.07-002-generic_ecspi3/board/freescale/wirelessroad_ecspi3/wirelessroad_ecspi3.c	2020-03-28 01:18:12.821831652 +0200
-@@ -0,0 +1,854 @@
+@@ -0,0 +1,855 @@
 +/*
 + * Copyright (C) 2015 Freescale Semiconductor, Inc.
 + *
@@ -618,10 +618,10 @@ diff -Nru u-boot-2017.07-001/board/freescale/wirelessroad_ecspi3/wirelessroad_ec
 +#include <asm/arch/mx6-pins.h>
 +#include <asm/arch/sys_proto.h>
 +#include <asm/gpio.h>
-+#include <asm/imx-common/spi.h>
-+#include <asm/imx-common/iomux-v3.h>
-+#include <asm/imx-common/boot_mode.h>
-+#include <asm/imx-common/mxc_i2c.h>
++#include <asm/mach-imx/spi.h>
++#include <asm/mach-imx/iomux-v3.h>
++#include <asm/mach-imx/boot_mode.h>
++#include <asm/mach-imx/mxc_i2c.h>
 +#include <asm/io.h>
 +#include <common.h>
 +#include <fsl_esdhc.h>
@@ -630,6 +630,7 @@ diff -Nru u-boot-2017.07-001/board/freescale/wirelessroad_ecspi3/wirelessroad_ec
 +#include <linux/sizes.h>
 +#include <mmc.h>
 +#include <netdev.h>
++#include <linux/delay.h>
 +
 +#include <usb.h>
 +#include <usb/ehci-ci.h>
@@ -982,7 +983,7 @@ diff -Nru u-boot-2017.07-001/board/freescale/wirelessroad_ecspi3/wirelessroad_ec
 +	}
 +}
 +
-+int board_eth_init(bd_t *bis)
++int board_eth_init(struct bd_info *bis)
 +{
 +	eth_reset(ENET_RESET, "enet reset", MX6_PAD_LCD_DATA13__GPIO3_IO18|MUX_PAD_CTRL(NO_PAD_CTRL), 1);
 +	eth_reset(ENET2_RESET, "enet2 reset", MX6_PAD_LCD_DATA00__GPIO3_IO05|MUX_PAD_CTRL(NO_PAD_CTRL), 0);
@@ -1461,7 +1462,7 @@ diff -Nru u-boot-2017.07-001/board/freescale/wirelessroad_ecspi3/wirelessroad_ec
 diff -Nru u-boot-2017.07-001/configs/wirelessroad_ecspi3_defconfig u-boot-2017.07-002-generic_ecspi3/configs/wirelessroad_ecspi3_defconfig
 --- u-boot-2017.07-001/configs/wirelessroad_ecspi3_defconfig	1970-01-01 03:00:00.000000000 +0300
 +++ u-boot-2017.07-002-generic_ecspi3/configs/wirelessroad_ecspi3_defconfig	2020-03-28 01:16:29.418162945 +0200
-@@ -0,0 +1,1039 @@
+@@ -0,0 +1,1049 @@
 +#
 +# Automatically generated file; DO NOT EDIT.
 +# U-Boot 2017.07 Configuration
@@ -1469,6 +1470,7 @@ diff -Nru u-boot-2017.07-001/configs/wirelessroad_ecspi3_defconfig u-boot-2017.0
 +CONFIG_CREATE_ARCH_SYMLINK=y
 +# CONFIG_ARC is not set
 +CONFIG_ARM=y
++CONFIG_SYS_TEXT_BASE=0x87800000
 +# CONFIG_M68K is not set
 +# CONFIG_MICROBLAZE is not set
 +# CONFIG_MIPS is not set
@@ -1603,8 +1605,10 @@ diff -Nru u-boot-2017.07-001/configs/wirelessroad_ecspi3_defconfig u-boot-2017.0
 +# CONFIG_ARCH_ROCKCHIP is not set
 +# CONFIG_TARGET_THUNDERX_88XX is not set
 +# CONFIG_ARCH_ASPEED is not set
-+CONFIG_SYS_MALLOC_F_LEN=0x400
 +# CONFIG_SECURE_BOOT is not set
++CONFIG_SYS_MALLOC_F_LEN=0x1000
++CONFIG_NR_DRAM_BANKS=1
++CONFIG_ENV_SIZE=0x2000
 +CONFIG_MX6=y
 +CONFIG_MX6UL=y
 +CONFIG_MX6ULL=y
@@ -1826,7 +1830,7 @@ diff -Nru u-boot-2017.07-001/configs/wirelessroad_ecspi3_defconfig u-boot-2017.0
 +#
 +CONFIG_CMDLINE=y
 +CONFIG_HUSH_PARSER=y
-+CONFIG_SYS_PROMPT="=> "
++CONFIG_SYS_PROMPT="2020=> "
 +
 +#
 +# Autoboot options
@@ -1849,7 +1853,7 @@ diff -Nru u-boot-2017.07-001/configs/wirelessroad_ecspi3_defconfig u-boot-2017.0
 +CONFIG_CMD_BDI=y
 +# CONFIG_CMD_CONFIG is not set
 +CONFIG_CMD_CONSOLE=y
-+CONFIG_CMD_CPU=y
++# CONFIG_CMD_CPU is not set
 +# CONFIG_CMD_LICENSE is not set
 +
 +#
@@ -1897,6 +1901,8 @@ diff -Nru u-boot-2017.07-001/configs/wirelessroad_ecspi3_defconfig u-boot-2017.0
 +# CONFIG_SHA1SUM_VERIFY is not set
 +# CONFIG_LOOPW is not set
 +CONFIG_CMD_MEMTEST=y
++CONFIG_SYS_MEMTEST_START=0x80000000
++CONFIG_SYS_MEMTEST_END=0x88000000
 +# CONFIG_CMD_MX_CYCLIC is not set
 +CONFIG_CMD_MEMINFO=y
 +
@@ -1928,6 +1934,8 @@ diff -Nru u-boot-2017.07-001/configs/wirelessroad_ecspi3_defconfig u-boot-2017.0
 +# CONFIG_CMD_NAND_TORTURE is not set
 +# CONFIG_CMD_PART is not set
 +CONFIG_CMD_SF=y
++CONFIG_SF_DEFAULT_SPEED=20000000
++CONFIG_SF_DEFAULT_BUS=2
 +CONFIG_CMD_SPI=y
 +# CONFIG_CMD_I2C is not set
 +# CONFIG_CMD_USB is not set
@@ -2080,7 +2088,7 @@ diff -Nru u-boot-2017.07-001/configs/wirelessroad_ecspi3_defconfig u-boot-2017.0
 +# Clock
 +#
 +# CONFIG_CLK is not set
-+CONFIG_CPU=y
++# CONFIG_CPU is not set
 +
 +#
 +# Hardware crypto devices
@@ -2164,7 +2172,7 @@ diff -Nru u-boot-2017.07-001/configs/wirelessroad_ecspi3_defconfig u-boot-2017.0
 +# CONFIG_CROS_EC is not set
 +# CONFIG_DS4510 is not set
 +# CONFIG_FSL_SEC_MON is not set
-+# CONFIG_MXC_OCOTP is not set
++CONFIG_MXC_OCOTP=y
 +# CONFIG_NUVOTON_NCT6102D is not set
 +# CONFIG_PWRSEQ is not set
 +# CONFIG_PCA9551_LED is not set
@@ -2216,6 +2224,8 @@ diff -Nru u-boot-2017.07-001/configs/wirelessroad_ecspi3_defconfig u-boot-2017.0
 +# SPI Flash Support
 +#
 +CONFIG_SPI_FLASH=y
++CONFIG_SF_DEFAULT_BUS=2
++CONFIG_SF_DEFAULT_MODE=0
 +CONFIG_SPI_FLASH_BAR=y
 +# CONFIG_SF_DUAL_FLASH is not set
 +CONFIG_SPI_FLASH_ATMEL=y
@@ -2344,6 +2354,7 @@ diff -Nru u-boot-2017.07-001/configs/wirelessroad_ecspi3_defconfig u-boot-2017.0
 +#
 +# SPI Support
 +#
++CONFIG_SPI=y
 +# CONFIG_DM_SPI is not set
 +# CONFIG_SOFT_SPI is not set
 +# CONFIG_FSL_ESPI is not set
@@ -2504,7 +2515,7 @@ diff -Nru u-boot-2017.07-001/configs/wirelessroad_ecspi3_defconfig u-boot-2017.0
 diff -Nru u-boot-2017.07-001/include/configs/wirelessroad_ecspi3.h u-boot-2017.07-002-generic_ecspi3/include/configs/wirelessroad_ecspi3.h
 --- u-boot-2017.07-001/include/configs/wirelessroad_ecspi3.h	1970-01-01 03:00:00.000000000 +0300
 +++ u-boot-2017.07-002-generic_ecspi3/include/configs/wirelessroad_ecspi3.h	2020-03-19 04:47:08.202714768 +0200
-@@ -0,0 +1,237 @@
+@@ -0,0 +1,238 @@
 +/*
 + * Copyright (C) 2020 WirelessRoad.
 + *
@@ -2518,7 +2529,7 @@ diff -Nru u-boot-2017.07-001/include/configs/wirelessroad_ecspi3.h u-boot-2017.0
 +#include <asm/arch/imx-regs.h>
 +#include <linux/sizes.h>
 +#include "mx6_common.h"
-+#include <asm/imx-common/gpio.h>
++#include <asm/mach-imx/gpio.h>
 +
 +/* #define CONFIG_DM_WARN */
 +/* #define DEBUG */
@@ -2537,7 +2548,7 @@ diff -Nru u-boot-2017.07-001/include/configs/wirelessroad_ecspi3.h u-boot-2017.0
 +/* Size of malloc() pool */
 +#define CONFIG_SYS_MALLOC_LEN		(16 * SZ_1M)
 +
-+#define CONFIG_MXC_GPIO
++#define CONFIG_MXC_GPIO 1
 +
 +#define CONFIG_MXC_UART
 +#define CONFIG_MXC_UART_BASE		UART1_BASE
@@ -2573,9 +2584,9 @@ diff -Nru u-boot-2017.07-001/include/configs/wirelessroad_ecspi3.h u-boot-2017.0
 +# define CONFIG_RBTREE
 +# define CONFIG_LZO
 +
-+# define CONFIG_APBH_DMA
-+# define CONFIG_APBH_DMA_BURST
-+# define CONFIG_APBH_DMA_BURST8
++# define CONFIG_APBH_DMA 1
++# define CONFIG_APBH_DMA_BURST 1
++# define CONFIG_APBH_DMA_BURST8 1
 +#endif
 +
 +#define CONFIG_SYS_FSL_USDHC_NUM	1
@@ -2594,7 +2605,7 @@ diff -Nru u-boot-2017.07-001/include/configs/wirelessroad_ecspi3.h u-boot-2017.0
 +#define CONFIG_SF_DEFAULT_BUS		2
 +#define CONFIG_SF_DEFAULT_CS		0
 +#define CONFIG_SF_DEFAULT_SPEED		20000000
-+#define CONFIG_SF_DEFAULT_MODE		SPI_MODE_0
++#define CONFIG_SF_DEFAULT_MODE		0x0
 +#endif
 +
 +#define CONFIG_CMD_USB
@@ -2692,7 +2703,7 @@ diff -Nru u-boot-2017.07-001/include/configs/wirelessroad_ecspi3.h u-boot-2017.0
 +
 +/* Miscellaneous configurable options */
 +#define CONFIG_SYS_MEMTEST_START	0x80000000
-+#define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 0x8000000)
++#define CONFIG_SYS_MEMTEST_END		0x88000000
 +
 +#define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 +#define CONFIG_SYS_HZ			1000
@@ -2713,7 +2724,8 @@ diff -Nru u-boot-2017.07-001/include/configs/wirelessroad_ecspi3.h u-boot-2017.0
 +	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
 +
 +/* Environment organization */
-+#define CONFIG_ENV_SIZE			(8 * 1024)
++/* replacing #define CONFIG_ENV_SIZE            (8 *1024) */
++#define CONFIG_ENV_SIZE			0x2000
 +
 +#if !defined(CONFIG_CMD_SF)
 +#define CONFIG_ENV_IS_IN_MMC
