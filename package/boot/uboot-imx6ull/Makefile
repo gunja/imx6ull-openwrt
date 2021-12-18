@@ -40,7 +40,7 @@ endef
 #endef
 
 
-UBOOT_TARGETS := wirelessroad_ecspi3
+UBOOT_TARGETS := wirelessroad_ecspi3 wirelessroad_ecspi3_debug
 
 UBOOT_MAKE_FLAGS += $(UBOOT_IMAGE)
 
